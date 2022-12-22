@@ -1,0 +1,46 @@
+.TH KEYRING "1"
+
+.SH NAME
+keyring \- Python\-Keyring command\-line utility
+
+.SH SYNOPSIS
+\fBkeyring\fR [\fI\,get|set|del\/\fR] \fI\,SERVICE USERNAME\/\fR
+
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show the help message and exit.
+.TP
+\fB\-p\fR KEYRING_PATH, \fB\-\-keyring\-path\fR=\fI\,KEYRING_PATH\/\fR
+Specify path to the keyring backend to use.
+.TP
+\fB\-b\fR KEYRING_BACKEND, \fB\-\-keyring\-backend\fR=\fI\,KEYRING_BACKEND\/\fR
+Specify name of the keyring backend to use.
+.TP
+\fB\-\-list\-backends\fR
+List the available keyring backends and exit.
+.TP
+\fB\-\-disable\fR
+Create a configuration file disabling keyring and exit.
+
+.SH DESCRIPTION
+\fBkeyring\fR provides a way to store, lookup and delete passwords in various
+backends supported by Python\-Keyring.
+
+Usage example:
+
+.nf
+.ft C
+$ keyring set service username
+Password for \(aqusername\(aq in \(aqservice\(aq:
+$ keyring get service username
+password
+.ft
+.fi
+
+How the \fI\,SERVICE\/\fR and \fI\,USERNAME\/\fR parameters are handled
+depends on the backend, with the default Secret Service backend they are
+stored as item lookup attributes.
+
+.SH SEE ALSO
+.BR secret\-tool (1)

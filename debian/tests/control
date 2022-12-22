@@ -1,0 +1,8 @@
+Tests: secretservice
+Depends: gir1.2-secret-1,
+         gnome-keyring (>= 3.11.92),
+         python3-all,
+         python3-gi,
+         python3-keyring,
+         python3-pytest (>= 4.6)
+Restrictions: allow-stderr
