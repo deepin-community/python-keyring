@@ -1,10 +1,19 @@
-import sys
-import platform
 import multiprocessing
+import platform
 
 import pytest
 
 import keyring
+
+
+@pytest.fixture(autouse=True)
+def workaround_pytest_12178(monkeypatch):
+    """
+    Ensure the current directory is on sys.path so that `tests` is importable.
+
+    Workaround for #673.
+    """
+    monkeypatch.syspath_prepend('.')
 
 
 def subprocess_get():
@@ -15,11 +24,6 @@ pytestmark = [
     pytest.mark.xfail(
         platform.system() == 'Linux',
         reason="#410: keyring discovery fails intermittently",
-    ),
-    pytest.mark.skipif(
-        # always skip as it crashes the interpreter
-        sys.version_info < (3, 8) and platform.system() == 'Darwin',
-        reason="#281, #494: Prior to 3.8, multiprocess invocation fails",
     ),
 ]
 

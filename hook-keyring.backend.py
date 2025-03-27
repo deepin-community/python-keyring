@@ -1,6 +1,7 @@
-# Used by pyinstaller to expose hidden imports
+"""
+Hook used by pyinstaller to expose hidden imports.
+"""
 
-import importlib_metadata as metadata
-
+from keyring.compat.py312 import metadata
 
 hiddenimports = [ep.value for ep in metadata.entry_points(group='keyring.backends')]

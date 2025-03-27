@@ -1,27 +1,28 @@
-import functools
+from __future__ import annotations
+
 import logging
 
-from ..util import properties
+from jaraco.context import ExceptionTrap
+
 from ..backend import KeyringBackend
+from ..compat import properties
 from ..credentials import SimpleCredential
-from ..errors import PasswordDeleteError, ExceptionRaisedContext
+from ..errors import PasswordDeleteError
 
-
-with ExceptionRaisedContext() as missing_deps:
+with ExceptionTrap() as missing_deps:
     try:
         # prefer pywin32-ctypes
-        from win32ctypes.pywin32 import pywintypes
-        from win32ctypes.pywin32 import win32cred
+        from win32ctypes.pywin32 import pywintypes, win32cred
 
         # force demand import to raise ImportError
-        win32cred.__name__
+        win32cred.__name__  # noqa: B018
     except ImportError:
         # fallback to pywin32
         import pywintypes
         import win32cred
 
         # force demand import to raise ImportError
-        win32cred.__name__
+        win32cred.__name__  # noqa: B018
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class Persistence:
         if isinstance(value, str):
             attr = 'CRED_PERSIST_' + value.replace(' ', '_').upper()
             value = getattr(win32cred, attr)
-        setattr(keyring, '_persist', value)
+        keyring._persist = value
 
 
 class DecodingCredential(dict):
@@ -55,7 +56,7 @@ class DecodingCredential(dict):
         except UnicodeDecodeError:
             decoded_cred_utf8 = cred.decode('utf-8')
             log.warning(
-                "Retrieved an UTF-8 encoded credential. Please be aware that "
+                "Retrieved a UTF-8 encoded credential. Please be aware that "
                 "this library only writes credentials in UTF-16."
             )
             return decoded_cred_utf8
@@ -81,9 +82,8 @@ class WinVaultKeyring(KeyringBackend):
 
     persist = Persistence()
 
-    @properties.ClassProperty
-    @classmethod
-    def priority(cls):
+    @properties.classproperty
+    def priority(cls) -> float:
         """
         If available, the preferred backend on Windows.
         """
@@ -96,29 +96,32 @@ class WinVaultKeyring(KeyringBackend):
         return f'{username}@{service}'
 
     def get_password(self, service, username):
-        # first attempt to get the password under the service name
-        res = self._get_password(service)
-        if not res or res['UserName'] != username:
-            # It wasn't found so attempt to get it with the compound name
-            res = self._get_password(self._compound_name(username, service))
-        if not res:
-            return None
-        return res.value
+        res = self._resolve_credential(service, username)
+        return res and res.value
 
-    def _get_password(self, target):
+    def _resolve_credential(
+        self, service: str, username: str | None
+    ) -> DecodingCredential | None:
+        # first attempt to get the password under the service name
+        res = self._read_credential(service)
+        if not res or username and res['UserName'] != username:
+            # It wasn't found so attempt to get it with the compound name
+            res = self._read_credential(self._compound_name(username, service))
+        return res
+
+    def _read_credential(self, target):
         try:
             res = win32cred.CredRead(
                 Type=win32cred.CRED_TYPE_GENERIC, TargetName=target
             )
         except pywintypes.error as e:
-            e = OldPywinError.wrap(e)
             if e.winerror == 1168 and e.funcname == 'CredRead':  # not found
                 return None
             raise
         return DecodingCredential(res)
 
     def set_password(self, service, username, password):
-        existing_pw = self._get_password(service)
+        existing_pw = self._read_credential(service)
         if existing_pw:
             # resave the existing password using a compound target
             existing_username = existing_pw['UserName']
@@ -145,7 +148,7 @@ class WinVaultKeyring(KeyringBackend):
         compound = self._compound_name(username, service)
         deleted = False
         for target in service, compound:
-            existing_pw = self._get_password(target)
+            existing_pw = self._read_credential(target)
             if existing_pw and existing_pw['UserName'] == username:
                 deleted = True
                 self._delete_password(target)
@@ -156,43 +159,10 @@ class WinVaultKeyring(KeyringBackend):
         try:
             win32cred.CredDelete(Type=win32cred.CRED_TYPE_GENERIC, TargetName=target)
         except pywintypes.error as e:
-            e = OldPywinError.wrap(e)
             if e.winerror == 1168 and e.funcname == 'CredDelete':  # not found
                 return
             raise
 
     def get_credential(self, service, username):
-        res = None
-        # get the credentials associated with the provided username
-        if username:
-            res = self._get_password(self._compound_name(username, service))
-        # get any first password under the service name
-        if not res:
-            res = self._get_password(service)
-            if not res:
-                return None
-        return SimpleCredential(res['UserName'], res.value)
-
-
-class OldPywinError:
-    """
-    A compatibility wrapper for old PyWin32 errors, such as reported in
-    https://bitbucket.org/kang/python-keyring-lib/issue/140/
-    """
-
-    def __init__(self, orig):
-        self.orig = orig
-
-    @property
-    def funcname(self):
-        return self.orig[1]
-
-    @property
-    def winerror(self):
-        return self.orig[0]
-
-    @classmethod
-    def wrap(cls, orig_err):
-        attr_check = functools.partial(hasattr, orig_err)
-        is_old = not all(map(attr_check, ['funcname', 'winerror']))
-        return cls(orig_err) if is_old else orig_err
+        res = self._resolve_credential(service, username)
+        return res and SimpleCredential(res['UserName'], res.value)

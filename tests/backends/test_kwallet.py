@@ -6,7 +6,6 @@ from keyring.testing.backend import BackendBasicTests
 
 @pytest.mark.skipif(not kwallet.DBusKeyring.viable, reason="KWallet5 unavailable")
 class TestDBusKWallet(BackendBasicTests):
-
     # Remove '@' from service name as this is not supported in service names
     # '@' will cause troubles during migration of kwallet entries
     DIFFICULT_CHARS = BackendBasicTests.DIFFICULT_CHARS.replace('@', '')
@@ -40,19 +39,16 @@ class TestDBusKWallet(BackendBasicTests):
         keyring = self.keyring
 
         # for the non-existent password
-        self.assertEqual(keyring.get_password(service, username), None)
+        assert keyring.get_password(service, username) is None
 
         # common usage
         self.set_password(service, username, password, True)
         # re-init keyring to force migration
         self.keyring = keyring = self.init_keyring()
         ret_password = keyring.get_password(service, username)
-        self.assertEqual(
-            ret_password,
-            password,
-            "Incorrect password for username: '%s' "
-            "on service: '%s'. '%s' != '%s'"
-            % (service, username, ret_password, password),
+        assert ret_password == password, (
+            f"Incorrect password for username: '{service}' "
+            f"on service: '{username}'. '{ret_password}' != '{password}'",
         )
 
         # for the empty password
@@ -60,21 +56,9 @@ class TestDBusKWallet(BackendBasicTests):
         # re-init keyring to force migration
         self.keyring = keyring = self.init_keyring()
         ret_password = keyring.get_password(service, username)
-        self.assertEqual(
-            ret_password,
-            "",
-            "Incorrect password for username: '%s' "
-            "on service: '%s'. '%s' != '%s'" % (service, username, ret_password, ""),
-        )
+        assert ret_password == ""
         ret_password = keyring.get_password('Python', username + '@' + service)
-        self.assertEqual(
-            ret_password,
-            None,
-            "Not 'None' password returned for username: '%s' "
-            "on service: '%s'. '%s' != '%s'. Passwords from old "
-            "folder should be deleted during migration."
-            % (service, username, ret_password, None),
-        )
+        assert ret_password is None
 
 
 @pytest.mark.skipif(

@@ -1,4 +1,5 @@
 from ..backend import KeyringBackend
+from ..compat import properties
 from ..errors import NoKeyringError
 
 
@@ -13,7 +14,9 @@ class Keyring(KeyringBackend):
     keyring.errors.NoKeyringError: ...No recommended backend...
     """
 
-    priority = 0
+    @properties.classproperty
+    def priority(cls) -> float:
+        return 0
 
     def get_password(self, service, username, password=None):
         msg = (
@@ -24,4 +27,4 @@ class Keyring(KeyringBackend):
         )
         raise NoKeyringError(msg)
 
-    set_password = delete_password = get_password  # type: ignore
+    set_password = delete_password = get_password

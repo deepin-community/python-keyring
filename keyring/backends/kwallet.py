@@ -1,12 +1,11 @@
-import sys
-import os
 import contextlib
+import os
+import sys
 
 from ..backend import KeyringBackend
+from ..compat import properties
 from ..credentials import SimpleCredential
-from ..errors import PasswordDeleteError
-from ..errors import PasswordSetError, InitError, KeyringLocked
-from ..util import properties
+from ..errors import InitError, KeyringLocked, PasswordDeleteError, PasswordSetError
 
 try:
     import dbus
@@ -37,15 +36,14 @@ class DBusKeyring(KeyringBackend):
     bus_name = 'org.kde.kwalletd5'
     object_path = '/modules/kwalletd5'
 
-    @properties.ClassProperty
-    @classmethod
-    def priority(cls):
+    @properties.classproperty
+    def priority(cls) -> float:
         if 'dbus' not in globals():
             raise RuntimeError('python-dbus not installed')
         try:
             bus = dbus.SessionBus(mainloop=DBusGMainLoop())
         except dbus.DBusException as exc:
-            raise RuntimeError(exc.get_dbus_message())
+            raise RuntimeError(exc.get_dbus_message()) from exc
         if not (
             bus.name_has_owner(cls.bus_name)
             or cls.bus_name in bus.list_activatable_names()
@@ -98,7 +96,7 @@ class DBusKeyring(KeyringBackend):
             self.iface = dbus.Interface(remote_obj, 'org.kde.KWallet')
             self.handle = self.iface.open(self.iface.networkWallet(), wId, self.appid)
         except dbus.DBusException as e:
-            raise InitError('Failed to open keyring: %s.' % e)
+            raise InitError(f'Failed to open keyring: {e}.') from e
 
         if self.handle < 0:
             return False
@@ -161,7 +159,6 @@ class DBusKeyringKWallet4(DBusKeyring):
     bus_name = 'org.kde.kwalletd'
     object_path = '/modules/kwalletd'
 
-    @properties.ClassProperty
-    @classmethod
+    @properties.classproperty
     def priority(cls):
         return super().priority - 1

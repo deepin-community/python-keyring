@@ -1,13 +1,17 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# flake8: noqa
+from __future__ import annotations
 
-extensions = ['sphinx.ext.autodoc', 'jaraco.packaging.sphinx', 'rst.linker']
+extensions = [
+    'sphinx.ext.autodoc',
+    'jaraco.packaging.sphinx',
+]
 
 master_doc = "index"
+html_theme = "furo"
 
+# Link dates and other references in the changelog
+extensions += ['rst.linker']
 link_files = {
-    '../CHANGES.rst': dict(
+    '../NEWS.rst': dict(
         using=dict(GH='https://github.com'),
         replace=[
             dict(
@@ -20,16 +24,35 @@ link_files = {
             ),
             dict(
                 pattern=r'PEP[- ](?P<pep_number>\d+)',
-                url='https://www.python.org/dev/peps/pep-{pep_number:0>4}/',
+                url='https://peps.python.org/pep-{pep_number:0>4}/',
             ),
         ],
     )
 }
 
-# Be strict about any broken references:
+# Be strict about any broken references
 nitpicky = True
+nitpick_ignore: list[tuple[str, str]] = []
 
-# Custom sidebar templates, maps document names to template names.
-html_theme = 'alabaster'
-templates_path = ['_templates']
-html_sidebars = {'index': ['tidelift-sidebar.html']}
+# Include Python intersphinx mapping to prevent failures
+# jaraco/skeleton#51
+extensions += ['sphinx.ext.intersphinx']
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
+
+# Preserve authored syntax for defaults
+autodoc_preserve_defaults = True
+
+# Add support for linking usernames, PyPI projects, Wikipedia pages
+github_url = 'https://github.com/'
+extlinks = {
+    'user': (f'{github_url}%s', '@%s'),
+    'pypi': ('https://pypi.org/project/%s', '%s'),
+    'wiki': ('https://wikipedia.org/wiki/%s', '%s'),
+}
+extensions += ['sphinx.ext.extlinks']
+
+# local
+
+extensions += ['jaraco.tidelift']
