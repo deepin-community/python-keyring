@@ -1,0 +1,49 @@
+jaraco.classes
+jaraco.functools
+jaraco.context
+
+[:python_version < "3.12"]
+importlib_metadata>=4.11.4
+
+[:python_version < "3.9"]
+importlib_resources
+
+[:sys_platform == "linux"]
+SecretStorage>=3.2
+jeepney>=0.4.2
+
+[:sys_platform == "win32"]
+pywin32-ctypes>=0.2.0
+
+[check]
+pytest-checkdocs>=2.4
+
+[check:sys_platform != "cygwin"]
+pytest-ruff>=0.2.1
+
+[completion]
+shtab>=1.1.0
+
+[cover]
+pytest-cov
+
+[doc]
+sphinx>=3.5
+jaraco.packaging>=9.3
+rst.linker>=1.9
+furo
+sphinx-lint
+jaraco.tidelift>=1.4
+
+[enabler]
+pytest-enabler>=2.2
+
+[test]
+pytest!=8.1.*,>=6
+pyfakefs
+
+[type]
+pytest-mypy
+pygobject-stubs
+shtab
+types-pywin32

@@ -1,4 +1,5 @@
 from ..backend import KeyringBackend
+from ..compat import properties
 
 
 class Keyring(KeyringBackend):
@@ -9,9 +10,11 @@ class Keyring(KeyringBackend):
     >>> kr.get_password('svc', 'user')
     """
 
-    priority = -1
+    @properties.classproperty
+    def priority(cls) -> float:
+        return -1
 
     def get_password(self, service, username, password=None):
         pass
 
-    set_password = delete_password = get_password  # type: ignore
+    set_password = delete_password = get_password

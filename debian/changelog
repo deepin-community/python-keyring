@@ -1,3 +1,152 @@
+python-keyring (25.6.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Wed, 25 Dec 2024 21:25:25 +0300
+
+python-keyring (25.4.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Enable running pure tests during build.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Fri, 20 Sep 2024 20:00:01 +0300
+
+python-keyring (25.3.0-1) unstable; urgency=medium
+
+  [ Fredrik Roubert ]
+  * Remove use of SETUPTOOLS_SCM_IGNORE_VCS_ROOTS.
+    This will lead to the py.typed marker file getting included (PEP 561).
+
+  [ Dmitry Shachnev ]
+  * New upstream release.
+  * Bump Standards-Version to 4.7.0, no changes needed.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Mon, 05 Aug 2024 22:50:41 +0300
+
+python-keyring (25.2.1-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Thu, 16 May 2024 11:19:04 +0300
+
+python-keyring (25.2.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Bump required python3-setuptools version to 61.2.
+  * Add new options to the keyring(1) manpage.
+  * debian/copyright: Remove PSF-2 license. Not applicable since v23.12.0.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Tue, 30 Apr 2024 22:50:50 +0300
+
+python-keyring (25.1.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Promote python3-jaraco.context from Suggests to {,Build-}Depends.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Fri, 05 Apr 2024 22:51:54 +0300
+
+python-keyring (25.0.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Bump copyright years.
+  * Depend and build-depend on python3-jaraco.functools.
+  * Suggest python3-jaraco.classes and python3-jaraco.context.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 23 Mar 2024 21:20:03 +0300
+
+python-keyring (24.3.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Demote python3-shtab to Suggests, for Ubuntu’s convenience.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 02 Mar 2024 14:23:07 +0300
+
+python-keyring (24.3.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Add support for bash completion:
+    - Build-depend on and recommend python3-shtab.
+    - Install upstream bash completion snippet.
+    - Generate and install the completion file during install phase.
+  * Fix groff warning: cannot select font 'C'.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Wed, 15 Nov 2023 14:47:23 +0300
+
+python-keyring (24.2.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Bump python3-importlib-metadata dependency to 4.11.4 (per setup.cfg).
+  * Update dh_installchangelogs override for upstream NEWS.rst rename.
+  * Bump Standards-Version to 4.6.2, no changes needed.
+  * Install the ZSH completion file.
+  * Update the man page for the new version.
+  * Bump copyright years.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 24 Jun 2023 21:25:10 +0300
+
+python-keyring (23.9.3-2) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Remove constraints unnecessary since buster (oldstable):
+    + Build-Depends: Drop versioned constraint on dh-python.
+    + python3-keyring: Drop versioned constraint on python3-keyrings.alt and
+      python3-wheel in Breaks.
+
+ -- Jelmer Vernooĳ <jelmer@debian.org>  Wed, 14 Dec 2022 19:33:28 +0000
+
+python-keyring (23.9.3-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sun, 18 Sep 2022 16:32:21 +0300
+
+python-keyring (23.9.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Add dependency on python3-jaraco.classes, per install_requires.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Mon, 05 Sep 2022 13:12:48 +0300
+
+python-keyring (23.8.2-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 13 Aug 2022 19:35:24 +0300
+
+python-keyring (23.7.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Fri, 15 Jul 2022 23:33:44 +0300
+
+python-keyring (23.5.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Build-depend on pybuild-plugin-pyproject.
+  * Export SETUPTOOLS_SCM_IGNORE_VCS_ROOTS=$(CURDIR), to prevent
+    setuptools-scm from installing all files tracked by git, such as
+    debian/*.
+  * Update copyright years.
+  * Bump Standards-Version to 4.6.1, no changes needed.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 28 May 2022 16:55:35 +0300
+
+python-keyring (23.5.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sun, 02 Jan 2022 17:55:06 +0300
+
+python-keyring (23.3.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/tests/control: Require pytest ≥ 6, following upstream.
+  * debian/control: Require setuptools ≥ 56, following upstream.
+  * Drop use_session_collection_for_testing.patch, applied upstream.
+  * Bump Standards-Version to 4.6.0, no changes needed.
+
+ -- Dmitry Shachnev <mitya57@debian.org>  Sat, 27 Nov 2021 16:47:26 +0300
+
 python-keyring (23.2.0-1) unstable; urgency=medium
 
   * New upstream release.

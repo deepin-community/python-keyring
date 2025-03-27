@@ -4,7 +4,7 @@
 keyring \- Python\-Keyring command\-line utility
 
 .SH SYNOPSIS
-\fBkeyring\fR [\fI\,get|set|del\/\fR] \fI\,SERVICE USERNAME\/\fR
+\fBkeyring\fR [\fIOPTIONS\fR] [\fI\,get|set|del|diagnose\/\fR] \fI\,SERVICE USERNAME\/\fR
 
 .SH OPTIONS
 .TP
@@ -22,6 +22,18 @@ List the available keyring backends and exit.
 .TP
 \fB\-\-disable\fR
 Create a configuration file disabling keyring and exit.
+.TP
+\fB\-\-mode\fR {password,creds}
+Specify mode for \fBget\fP operation.  \fBpassword\fP requires a username and
+will return only the password.  \fBcreds\fP does not require a username and
+will return both the username and password separated by a newline.  Default is
+\fBpassword\fP.
+.TP
+\fB\-\-output\fR {plain,json}
+Specify output format for \fBget\fP operation. Default is \fBplain\fP.
+.TP
+\fB\-\-print\-completion\fR {bash,zsh,tcsh}
+Print shell completion script.
 
 .SH DESCRIPTION
 \fBkeyring\fR provides a way to store, lookup and delete passwords in various
@@ -29,14 +41,12 @@ backends supported by Python\-Keyring.
 
 Usage example:
 
-.nf
-.ft C
+.EX
 $ keyring set service username
 Password for \(aqusername\(aq in \(aqservice\(aq:
 $ keyring get service username
 password
-.ft
-.fi
+.EE
 
 How the \fI\,SERVICE\/\fR and \fI\,USERNAME\/\fR parameters are handled
 depends on the backend, with the default Secret Service backend they are

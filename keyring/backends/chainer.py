@@ -4,7 +4,7 @@ discover passwords in each.
 """
 
 from .. import backend
-from ..util import properties
+from ..compat import properties
 from . import fail
 
 
@@ -18,9 +18,8 @@ class ChainerBackend(backend.KeyringBackend):
     # until other backends have been constructed
     viable = True
 
-    @properties.ClassProperty
-    @classmethod
-    def priority(cls):
+    @properties.classproperty
+    def priority(cls) -> float:
         """
         If there are backends to chain, high priority
         Otherwise very low priority since our operation when empty
@@ -28,8 +27,7 @@ class ChainerBackend(backend.KeyringBackend):
         """
         return 10 if len(cls.backends) > 1 else (fail.Keyring.priority - 1)
 
-    @properties.ClassProperty
-    @classmethod
+    @properties.classproperty
     def backends(cls):
         """
         Discover all keyrings for chaining.

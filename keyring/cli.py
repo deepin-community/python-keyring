@@ -1,16 +1,36 @@
-#!/usr/bin/env python
 """Simple command line interface to get/set password from a keyring"""
 
-import getpass
+from __future__ import annotations
+
 import argparse
+import getpass
+import json
 import sys
 
-from . import core
-from . import backend
-from . import set_keyring, get_password, set_password, delete_password
+from . import (
+    backend,
+    completion,
+    core,
+    credentials,
+    delete_password,
+    get_credential,
+    get_password,
+    set_keyring,
+    set_password,
+)
+from .util import platform_
 
 
 class CommandLineTool:
+    # Attributes set dynamically by the ArgumentParser
+    keyring_path: str | None
+    keyring_backend: str | None
+    get_mode: str
+    output_format: str
+    operation: str
+    service: str
+    username: str
+
     def __init__(self):
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument(
@@ -35,9 +55,36 @@ class CommandLineTool:
         self.parser.add_argument(
             "--disable", action="store_true", help="Disable keyring and exit"
         )
+        self.parser._get_modes = ["password", "creds"]
+        self.parser.add_argument(
+            "--mode",
+            choices=self.parser._get_modes,
+            dest="get_mode",
+            default="password",
+            help="""
+            Mode for 'get' operation.
+            'password' requires a username and will return only the password.
+            'creds' does not require a username and will return both the username and password separated by a newline.
+
+            Default is 'password'
+            """,
+        )
+        self.parser._output_formats = ["plain", "json"]
+        self.parser.add_argument(
+            "--output",
+            choices=self.parser._output_formats,
+            dest="output_format",
+            default="plain",
+            help="""
+            Output format for 'get' operation.
+
+            Default is 'plain'
+            """,
+        )
+        self.parser._operations = ["get", "set", "del", "diagnose"]
         self.parser.add_argument(
             'operation',
-            help="get|set|del",
+            choices=self.parser._operations,
             nargs="?",
         )
         self.parser.add_argument(
@@ -48,6 +95,7 @@ class CommandLineTool:
             'username',
             nargs="?",
         )
+        completion.install(self.parser)
 
     def run(self, argv):
         args = self.parser.parse_args(argv)
@@ -62,21 +110,42 @@ class CommandLineTool:
             core.disable()
             return
 
+        if args.operation == 'diagnose':
+            self.diagnose()
+            return
+
         self._check_args()
         self._load_spec_backend()
         method = getattr(self, f'do_{self.operation}', self.invalid_op)
         return method()
 
     def _check_args(self):
-        if self.operation:
-            if self.service is None or self.username is None:
-                self.parser.error(f"{self.operation} requires service and username")
+        needs_username = self.operation != 'get' or self.get_mode != 'creds'
+        required = (['service'] + ['username'] * needs_username) * bool(self.operation)
+        if any(getattr(self, param) is None for param in required):
+            self.parser.error(f"{self.operation} requires {' and '.join(required)}")
 
     def do_get(self):
-        password = get_password(self.service, self.username)
-        if password is None:
+        credential = getattr(self, f'_get_{self.get_mode}')()
+        if credential is None:
             raise SystemExit(1)
-        print(password)
+        getattr(self, f'_emit_{self.output_format}')(credential)
+
+    def _emit_json(self, credential: credentials.Credential):
+        print(json.dumps(credential._vars()))
+
+    def _emit_plain(self, credential: credentials.Credential):
+        for val in credential._vars().values():
+            print(val)
+
+    def _get_creds(self) -> credentials.Credential | None:
+        return get_credential(self.service, self.username)
+
+    def _get_password(self) -> credentials.Credential | None:
+        password = get_password(self.service, self.username)
+        return (
+            credentials.AnonymousCredential(password) if password is not None else None
+        )
 
     def do_set(self):
         password = self.input_password(
@@ -87,8 +156,16 @@ class CommandLineTool:
     def do_del(self):
         delete_password(self.service, self.username)
 
+    def diagnose(self):
+        config_root = core._config_path()
+        if config_root.exists():
+            print("config path:", config_root)
+        else:
+            print("config path:", config_root, "(absent)")
+        print("data root:", platform_.data_root())
+
     def invalid_op(self):
-        self.parser.error("Specify operation 'get', 'del', or 'set'.")
+        self.parser.error(f"Specify operation ({', '.join(self.parser._operations)}).")
 
     def _load_spec_backend(self):
         if self.keyring_backend is None:
@@ -98,7 +175,7 @@ class CommandLineTool:
             if self.keyring_path:
                 sys.path.insert(0, self.keyring_path)
             set_keyring(core.load_keyring(self.keyring_backend))
-        except (Exception,) as exc:
+        except Exception as exc:
             # Tons of things can go wrong here:
             #   ImportError when using "fjkljfljkl"
             #   AttributeError when using "os.path.bar"
@@ -118,8 +195,15 @@ class CommandLineTool:
 
     @staticmethod
     def strip_last_newline(str):
-        """Strip one last newline, if present."""
-        return str[: -str.endswith('\n')]
+        r"""Strip one last newline, if present.
+
+        >>> CommandLineTool.strip_last_newline('foo')
+        'foo'
+        >>> CommandLineTool.strip_last_newline('foo\n')
+        'foo'
+        """
+        slc = slice(-1 if str.endswith('\n') else None)
+        return str[slc]
 
 
 def main(argv=None):

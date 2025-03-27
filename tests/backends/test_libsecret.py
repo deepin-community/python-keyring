@@ -1,8 +1,8 @@
 import pytest
 
+from keyring.backends import libsecret
 from keyring.testing.backend import BackendBasicTests
 from keyring.testing.util import NoNoneDictMutator
-from keyring.backends import libsecret
 
 
 @pytest.mark.skipif(
@@ -18,6 +18,7 @@ class TestLibSecretKeyring(BackendBasicTests):
             "password prompts are for this keyring"
         )
         keyring = libsecret.Keyring()
+        keyring.collection = 'session'
         return keyring
 
 

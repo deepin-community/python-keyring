@@ -14,7 +14,7 @@ in the keyring. Then, it adds it to the keyring for subsequent use.
 
 import getpass
 
-from . import get_password, delete_password, set_password
+from . import delete_password, get_password, set_password
 
 
 class PasswordMgr:
@@ -29,7 +29,7 @@ class PasswordMgr:
         user = self.get_username(realm, authuri)
         password = get_password(realm, user)
         if password is None:
-            prompt = 'password for %(user)s@%(realm)s for ' '%(authuri)s: ' % vars()
+            prompt = f'password for {user}@{realm} for {authuri}: '
             password = getpass.getpass(prompt)
             set_password(realm, user, password)
         return user, password

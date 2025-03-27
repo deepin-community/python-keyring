@@ -1,20 +1,19 @@
 import logging
 
-from ..util import properties
+from .. import backend
 from ..backend import KeyringBackend
+from ..compat import properties
 from ..credentials import SimpleCredential
 from ..errors import (
+    KeyringLocked,
     PasswordDeleteError,
     PasswordSetError,
-    ExceptionRaisedContext,
-    KeyringLocked,
 )
 
 available = False
 try:
     import gi
-    from gi.repository import Gio
-    from gi.repository import GLib
+    from gi.repository import Gio, GLib
 
     gi.require_version('Secret', '1')
     from gi.repository import Secret
@@ -26,37 +25,43 @@ except (AttributeError, ImportError, ValueError):
 log = logging.getLogger(__name__)
 
 
-class Keyring(KeyringBackend):
+class Keyring(backend.SchemeSelectable, KeyringBackend):
     """libsecret Keyring"""
 
     appid = 'Python keyring library'
-    if available:
-        schema = Secret.Schema.new(
+
+    @property
+    def schema(self):
+        return Secret.Schema.new(
             "org.freedesktop.Secret.Generic",
             Secret.SchemaFlags.NONE,
-            {
-                "application": Secret.SchemaAttributeType.STRING,
-                "service": Secret.SchemaAttributeType.STRING,
-                "username": Secret.SchemaAttributeType.STRING,
-            },
+            self._query(
+                Secret.SchemaAttributeType.STRING,
+                Secret.SchemaAttributeType.STRING,
+                application=Secret.SchemaAttributeType.STRING,
+            ),
         )
 
-    @properties.ClassProperty
-    @classmethod
-    def priority(cls):
-        with ExceptionRaisedContext() as exc:
-            Secret.__name__
-        if exc:
+    @properties.NonDataProperty
+    def collection(self):
+        return Secret.COLLECTION_DEFAULT
+
+    @properties.classproperty
+    def priority(cls) -> float:
+        if not available:
             raise RuntimeError("libsecret required")
+
+        # Make sure there is actually a secret service running
+        try:
+            Secret.Service.get_sync(Secret.ServiceFlags.OPEN_SESSION, None)
+        except GLib.Error as error:
+            raise RuntimeError("Can't open a session to the secret service") from error
+
         return 4.8
 
     def get_password(self, service, username):
         """Get password of the username for the service"""
-        attributes = {
-            "application": self.appid,
-            "service": service,
-            "username": username,
-        }
+        attributes = self._query(service, username, application=self.appid)
         try:
             items = Secret.password_search_sync(
                 self.schema, attributes, Secret.SearchFlags.UNLOCK, None
@@ -77,16 +82,11 @@ class Keyring(KeyringBackend):
 
     def set_password(self, service, username, password):
         """Set password for the username of the service"""
-        collection = Secret.COLLECTION_DEFAULT
-        attributes = {
-            "application": self.appid,
-            "service": service,
-            "username": username,
-        }
-        label = "Password for '{}' on '{}'".format(username, service)
+        attributes = self._query(service, username, application=self.appid)
+        label = f"Password for '{username}' on '{service}'"
         try:
             stored = Secret.password_store_sync(
-                self.schema, attributes, collection, label, password, None
+                self.schema, attributes, self.collection, label, password, None
             )
         except GLib.Error as error:
             quark = GLib.quark_try_string('secret-error')
@@ -101,11 +101,7 @@ class Keyring(KeyringBackend):
 
     def delete_password(self, service, username):
         """Delete the stored password (only the first one)"""
-        attributes = {
-            "application": self.appid,
-            "service": service,
-            "username": username,
-        }
+        attributes = self._query(service, username, application=self.appid)
         try:
             items = Secret.password_search_sync(
                 self.schema, attributes, Secret.SearchFlags.UNLOCK, None
@@ -136,9 +132,7 @@ class Keyring(KeyringBackend):
         and return a SimpleCredential containing  the username and password
         Otherwise, it will return the first username and password combo that it finds.
         """
-        query = {"service": service}
-        if username:
-            query["username"] = username
+        query = self._query(service, username)
         try:
             items = Secret.password_search_sync(
                 self.schema, query, Secret.SearchFlags.UNLOCK, None

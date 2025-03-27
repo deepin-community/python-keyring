@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 Common test functionality for backends.
 """
@@ -9,8 +7,9 @@ import string
 
 import pytest
 
-from .util import random_string
 from keyring import errors
+
+from .util import random_string
 
 # unicode only characters
 # Sourced from The Quick Brown Fox... Pangrams
@@ -70,6 +69,12 @@ class BackendBasicTests:
         username = random_string(20)
         service = random_string(20)
         self.check_set_get(service, username, password)
+
+    def test_set_after_set_blank(self):
+        service = random_string(20)
+        username = random_string(20)
+        self.keyring.set_password(service, username, "")
+        self.keyring.set_password(service, username, "non-blank")
 
     def test_difficult_chars(self):
         password = random_string(20, self.DIFFICULT_CHARS)
@@ -158,8 +163,38 @@ class BackendBasicTests:
             ('user2', 'password2'),
         )
 
+    @pytest.mark.xfail("platform.system() == 'Windows'", reason="#668")
+    def test_empty_username(self):
+        with pytest.deprecated_call():
+            self.set_password('service1', '', 'password1')
+        assert self.keyring.get_password('service1', '') == 'password1'
+
     def test_set_properties(self, monkeypatch):
         env = dict(KEYRING_PROPERTY_FOO_BAR='fizz buzz', OTHER_SETTING='ignore me')
         monkeypatch.setattr(os, 'environ', env)
         self.keyring.set_properties_from_env()
         assert self.keyring.foo_bar == 'fizz buzz'
+
+    def test_new_with_properties(self):
+        alt = self.keyring.with_properties(foo='bar')
+        assert alt is not self.keyring
+        assert alt.foo == 'bar'
+        with pytest.raises(AttributeError):
+            self.keyring.foo  # noqa: B018
+
+    def test_wrong_username_returns_none(self):
+        keyring = self.keyring
+        service = 'test_wrong_username_returns_none'
+        cred = keyring.get_credential(service, None)
+        assert cred is None
+
+        password_1 = 'password1'
+        password_2 = 'password2'
+        self.set_password(service, 'user1', password_1)
+        self.set_password(service, 'user2', password_2)
+
+        assert keyring.get_credential(service, "user1").password == password_1
+        assert keyring.get_credential(service, "user2").password == password_2
+
+        # Missing/wrong username should not return a cred
+        assert keyring.get_credential(service, "nobody!") is None

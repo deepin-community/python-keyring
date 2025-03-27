@@ -1,23 +1,20 @@
 .. image:: https://img.shields.io/pypi/v/keyring.svg
-   :target: `PyPI link`_
+   :target: https://pypi.org/project/keyring
 
 .. image:: https://img.shields.io/pypi/pyversions/keyring.svg
-   :target: `PyPI link`_
 
-.. _PyPI link: https://pypi.org/project/keyring
-
-.. image:: https://github.com/jaraco/keyring/workflows/tests/badge.svg
+.. image:: https://github.com/jaraco/keyring/actions/workflows/main.yml/badge.svg
    :target: https://github.com/jaraco/keyring/actions?query=workflow%3A%22tests%22
    :alt: tests
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
-   :alt: Code style: Black
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json
+    :target: https://github.com/astral-sh/ruff
+    :alt: Ruff
 
 .. image:: https://readthedocs.org/projects/keyring/badge/?version=latest
    :target: https://keyring.readthedocs.io/en/latest/?badge=latest
 
-.. image:: https://img.shields.io/badge/skeleton-2021-informational
+.. image:: https://img.shields.io/badge/skeleton-2024-informational
    :target: https://blog.jaraco.com/skeleton
 
 .. image:: https://tidelift.com/badges/package/pypi/keyring
@@ -54,6 +51,13 @@ install dbus-python as a system package.
 
 .. _dbus-python: https://gitlab.freedesktop.org/dbus/dbus-python
 
+Compatibility - macOS
+=====================
+
+macOS keychain supports macOS 11 (Big Sur) and later requires Python 3.8.7
+or later with the "universal2" binary. See
+`#525 <https://github.com/jaraco/keyring/issues/525>`_ for details.
+
 Using Keyring
 =============
 
@@ -71,7 +75,7 @@ Command-line Utility
 Keyring supplies a ``keyring`` command which is installed with the
 package. After installing keyring in most environments, the
 command should be available for setting, getting, and deleting
-passwords. For more information on usage, invoke with no arguments
+passwords. For more usage information, invoke with no arguments
 or with ``--help`` as so::
 
     $ keyring --help
@@ -89,6 +93,41 @@ package, suitable for invoking from Python like so::
     $ python -m keyring get system username
     password
 
+Tab Completion
+--------------
+
+If installed via a package manager (apt, pacman, nix, homebrew, etc),
+these shell completions may already have been distributed with the package
+(no action required).
+
+Keyring provides tab completion if the ``completion`` extra is installed::
+
+    $ pip install 'keyring[completion]'
+
+Then, generate shell completions, something like::
+
+    $ keyring --print-completion bash | sudo tee /usr/share/bash-completion/completions/keyring
+    $ keyring --print-completion zsh | sudo tee /usr/share/zsh/site-functions/_keyring
+    $ keyring --print-completion tcsh | sudo tee /etc/profile.d/keyring.csh
+
+**Note**: the path of `/usr/share` is mainly for GNU/Linux. For other OSs,
+consider:
+
+- macOS (Homebrew x86): /usr/local/share
+- macOS (Homebrew ARM): /opt/homebrew/share
+- Android (Termux): /data/data/com.termux/files/usr/share
+- Windows (mingw64 of msys2): /mingw64/share
+- ...
+
+After installing the shell completions, enable them following your shell's
+recommended instructions. e.g.:
+
+- bash: install `bash-completion <https://github.com/scop/bash-completion>`_,
+  and ensure ``. /usr/share/bash-completion/bash_completion`` in ``~/.bashrc``.
+- zsh: ensure ``autoload -Uz compinit && compinit`` appears in ``~/.zshrc``,
+  then ``grep -w keyring ~/.zcompdump`` to verify keyring appears, indicating
+  it was installed correctly.
+
 Configuring
 ===========
 
@@ -103,21 +142,14 @@ Config file path
 
 The configuration is stored in a file named "keyringrc.cfg"
 found in a platform-specific location. To determine
-where the config file is stored, run the following::
-
-    python -c "import keyring.util.platform_; print(keyring.util.platform_.config_root())"
-
-Some keyrings also store the keyring data in the file system.
-To determine where the data files are stored, run::
-
-    python -c "import keyring.util.platform_; print(keyring.util.platform_.data_root())"
+where the config file is stored, run ``keyring diagnose``.
 
 Config file content
 -------------------
 
 To specify a keyring backend, set the **default-keyring** option to the
 full path of the class for that backend, such as
-``keyring.backends.OS_X.Keyring``.
+``keyring.backends.macOS.Keyring``.
 
 If **keyring-path** is indicated, keyring will add that path to the Python
 module search path before loading the backend.
@@ -136,27 +168,31 @@ Third-Party Backends
 In addition to the backends provided by the core keyring package for
 the most common and secure use cases, there
 are additional keyring backend implementations available for other
-use-cases. Simply install them to make them available:
+use cases. Simply install them to make them available:
 
 - `keyrings.cryptfile <https://pypi.org/project/keyrings.cryptfile>`_
   - Encrypted text file storage.
-- `keyring_jeepney <https://pypi.org/project/keyring_jeepney>`__ - a
-  pure Python backend using the secret service DBus API for desktop
-  Linux.
 - `keyrings.alt <https://pypi.org/project/keyrings.alt>`_ - "alternate",
   possibly-insecure backends, originally part of the core package, but
   available for opt-in.
 - `gsheet-keyring <https://pypi.org/project/gsheet-keyring>`_
   - a backend that stores secrets in a Google Sheet. For use with
   `ipython-secrets <https://pypi.org/project/ipython-secrets>`_.
-- `bitwarden-keyring <https://pypi.org/project/bitwarden-keyring/0.1.0/>`_
+- `bitwarden-keyring <https://pypi.org/project/bitwarden-keyring/>`_
   - a backend that stores secrets in the `BitWarden <https://bitwarden.com/>`_
   password manager.
+- `onepassword-keyring <https://pypi.org/project/onepassword-keyring/>`_
+  - a backend that stores secrets in the `1Password <https://1password.com/>`_ password manager.
 - `sagecipher <https://pypi.org/project/sagecipher>`_ - an encryption
   backend which uses the ssh agent protocol's signature operation to
   derive the cipher key.
 - `keyrings.osx_keychain_keys <https://pypi.org/project/keyrings.osx-keychain-keys>`_
-  - OSX keychain key-management, for private, public and symmetric keys.
+  - OSX keychain key-management, for private, public, and symmetric keys.
+- `keyring_pass.PasswordStoreBackend <https://github.com/nazarewk/keyring_pass>`_
+   - Password Store (pass) backend for python's keyring 
+- `keyring_jeepney <https://pypi.org/project/keyring_jeepney>`__ - a
+  pure Python backend using the secret service DBus API for desktop
+  Linux (requires ``keyring<24``).
 
 
 Write your own keyring backend
@@ -176,7 +212,7 @@ creating new backends are encouraged to create new, third-party packages
 in the ``keyrings`` namespace, in a manner modeled by the `keyrings.alt
 package <https://github.com/jaraco/keyrings.alt>`_. See the
 ``setup.cfg`` file
-in that project for a hints on how to create the requisite entry points.
+in that project for hints on how to create the requisite entry points.
 Backends that prove essential may be considered for inclusion in the core
 library, although the ease of installing these third-party packages should
 mean that extensions may be readily available.
@@ -197,7 +233,7 @@ To invoke ``set_keyring``::
     import keyring.backend
 
     class TestKeyring(keyring.backend.KeyringBackend):
-        """A test keyring which always outputs same password
+        """A test keyring which always outputs the same password
         """
         priority = 1
 
@@ -207,7 +243,7 @@ To invoke ``set_keyring``::
         def get_password(self, servicename, username):
             return "password from TestKeyring"
 
-        def delete_password(self, servicename, username, password):
+        def delete_password(self, servicename, username):
             pass
 
     # set the keyring for keyring lib
@@ -238,7 +274,7 @@ There are several mechanisms to disable keyring:
 - Uninstall keyring. Most applications are tolerant to keyring
   not being installed. Uninstalling keyring should cause those
   applications to fall back to the behavior without keyring.
-  This approach affects that Python environment where keyring
+  This approach affects the Python environment where keyring
   would otherwise have been installed.
 
 - Configure the Null keyring in the environment. Set
@@ -309,7 +345,7 @@ X11 server available (only D-Bus is required). In this case:
 
   When that command is started, enter a password into stdin and
   press Ctrl+D (end of data). After that, the daemon will fork into
-  background (use ``--foreground`` option to block).
+  the background (use ``--foreground`` option to block).
 * Now you can use the SecretService backend of Keyring. Remember to
   run your application in the same D-Bus session as the daemon.
 
@@ -370,11 +406,11 @@ should be Unicode text.
 Exceptions
 ----------
 
-The keyring lib raises following exceptions:
+The keyring lib raises the following exceptions:
 
 * ``keyring.errors.KeyringError``: Base Error class for all exceptions in keyring lib.
 * ``keyring.errors.InitError``: Raised when the keyring cannot be initialized.
-* ``keyring.errors.PasswordSetError``: Raised when password cannot be set in the keyring.
+* ``keyring.errors.PasswordSetError``: Raised when the password cannot be set in the keyring.
 * ``keyring.errors.PasswordDeleteError``: Raised when the password cannot be deleted in the keyring.
 
 Get Involved
@@ -387,26 +423,10 @@ welcomes contributors.
 * Bug Tracker: https://github.com/jaraco/keyring/issues/
 * Mailing list: http://groups.google.com/group/python-keyring
 
-For Enterprise
-==============
-
-Available as part of the Tidelift Subscription.
-
-This project and the maintainers of thousands of other packages are working with Tidelift to deliver one enterprise subscription that covers all of the open source you use.
-
-`Learn more <https://tidelift.com/subscription/pkg/pypi-PROJECT?utm_source=pypi-PROJECT&utm_medium=referral&utm_campaign=github>`_.
-
-Security Contact
-================
-
-To report a security vulnerability, please use the
-`Tidelift security contact <https://tidelift.com/security>`_.
-Tidelift will coordinate the fix and disclosure.
-
 Security Considerations
 =======================
 
-Each builtin backend may have security considerations to understand
+Each built-in backend may have security considerations to understand
 before using this library. Authors of tools or libraries utilizing
 ``keyring`` are encouraged to consider these concerns.
 
@@ -434,7 +454,7 @@ Additional issues can be added as needed.
 Making Releases
 ===============
 
-This project makes use of automated releases continuous
+This project makes use of automated releases and continuous
 integration. The
 simple workflow is to tag a commit and push it to Github. If it
 passes tests in CI, it will be automatically deployed to PyPI.
@@ -460,3 +480,12 @@ mentored Kang on this project.
 
 .. _this post: http://tarekziade.wordpress.com/2009/03/27/pycon-hallway-session-1-a-keyring-library-for-python/
 .. _Google Summer of Code: http://socghop.appspot.com/
+
+For Enterprise
+==============
+
+Available as part of the Tidelift Subscription.
+
+This project and the maintainers of thousands of other packages are working with Tidelift to deliver one enterprise subscription that covers all of the open source you use.
+
+`Learn more <https://tidelift.com/subscription/pkg/pypi-keyring?utm_source=pypi-keyring&utm_medium=referral&utm_campaign=github>`_.

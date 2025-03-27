@@ -2,10 +2,23 @@
 
 #DH_VERBOSE=1
 
-export PYBUILD_DISABLE=test
+export PYBUILD_BEFORE_TEST=cp keyring/backend_complete.* {build_dir}/keyring/
+export PYBUILD_TEST_ARGS=tests \
+	--ignore tests/backends/test_SecretService.py \
+	--ignore tests/backends/test_Windows.py \
+	--ignore tests/backends/test_kwallet.py \
+	--ignore tests/backends/test_libsecret.py \
+	--ignore tests/backends/test_macOS.py \
+	--ignore tests/test_multiprocess.py
 
 %:
 	dh $@ --with python3 --buildsystem pybuild
 
 override_dh_installchangelogs:
-	dh_installchangelogs -k CHANGES.rst
+	dh_installchangelogs -k NEWS.rst
+
+execute_after_dh_auto_install:
+	mkdir -p debian/python3-keyring/usr/share/bash-completion/completions
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=$(CURDIR) \
+		debian/python3-keyring/usr/bin/keyring --print-completion bash \
+		> $(CURDIR)/debian/python3-keyring/usr/share/bash-completion/completions/keyring
